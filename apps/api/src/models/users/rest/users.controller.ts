@@ -41,13 +41,18 @@ export class UsersController {
   // +skip, +take: chuyển từ string sang number vì query params luôn là string
   @ApiOkResponse({ type: [UserEntity] })
   @Get()
-  findAll(@Query() { skip, take, order, sortBy }: UserQueryDto) {
+  findAll(
+    @Query() { skip, take, order, sortBy, search, searchBy }: UserQueryDto,
+  ) {
     return this.prisma.user.findMany({
       ...(skip ? { skip: +skip } : null),
       ...(take ? { take: +take } : null),
       // Computed property name ([sortBy])
       //sortBy là giá trị scalar của user: createdAt,name,...
       ...(sortBy ? { orderBy: { [sortBy]: order || 'asc' } } : null),
+      ...(searchBy
+        ? { where: { [searchBy]: { contains: search, mode: 'insensitive' } } }
+        : null),
     });
   }
 

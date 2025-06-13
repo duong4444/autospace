@@ -14,11 +14,17 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
+    // Reflector lấy metadata gắn bởi @SetMetadata
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
   ) {}
+
+  // ExecutionContext lấy thông tin request hiện tại
+  // CanActivate là guard interface dùng để bảo vệ route , ktra dkien truy cap trc khi xu ly 1 request
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context);
+    // lấy req từ context (là obj request chứa headers,user,...)
     const req = ctx.getContext().req;
 
     await this.authenticateUser(req);
@@ -36,10 +42,26 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const user = await this.jwtService.verify(token);
-      req.user = user;
+      const payload = await this.jwtService.verify(token);
+      const uid = payload.uid;
+      if (!uid) {
+        throw new UnauthorizedException(
+          'Invalid token. No uid present in the token.',
+        );
+      }
+
+      const user = await this.prisma.user.findUnique({ where: { uid } });
+      if (!user) {
+        throw new UnauthorizedException(
+          'Invalid token. No user present with the uid.',
+        );
+      }
+
+      console.log('jwt payload: ', payload);
+      req.user = payload;
     } catch (err) {
       console.error('Token validation error:', err);
+      throw err;
     }
 
     if (!req.user) {
@@ -51,11 +73,12 @@ export class AuthGuard implements CanActivate {
     req: any,
     context: ExecutionContext,
   ): Promise<boolean> {
+    const requiredRoles = this.getMetadata<Role[]>('roles', context);
     const userRoles = await this.getUserRoles(req.user.uid);
     req.user.roles = userRoles;
 
-    const requiredRoles = this.getMetadata<Role[]>('roles', context);
     if (!requiredRoles || requiredRoles.length === 0) {
+      console.log('chạy vào đây nếu role rỗng');
       return true;
     }
 
@@ -64,21 +87,22 @@ export class AuthGuard implements CanActivate {
 
   private getMetadata<T>(key: string, context: ExecutionContext): T {
     return this.reflector.getAllAndOverride<T>(key, [
-      context.getHandler(),
-      context.getClass(),
+      context.getHandler(), // lấy metadata từ method
+      context.getClass(), // lấy metadata từ class
     ]);
   }
 
   private async getUserRoles(uid: string): Promise<Role[]> {
+    const roles: Role[] = [];
+
     const rolePromises = [
       this.prisma.admin.findUnique({ where: { uid } }),
       // Add promises for other role models here
     ];
 
-    const roles: Role[] = [];
-
     const [admin] = await Promise.all(rolePromises);
     admin && roles.push('admin');
+    console.log('roles trong getUserRoles ', roles);
 
     return roles;
   }

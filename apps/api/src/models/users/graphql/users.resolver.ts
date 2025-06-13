@@ -33,6 +33,7 @@ export class UsersResolver {
     return this.usersService.findAll(args);
   }
 
+  @AllowAuthenticated()
   @Query(() => User, { name: 'user' })
   findOne(@Args() args: FindUniqueUserArgs) {
     return this.usersService.findOne(args);
