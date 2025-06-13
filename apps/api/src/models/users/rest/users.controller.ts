@@ -30,8 +30,8 @@ export class UsersController {
   constructor(private readonly prisma: PrismaService) {}
 
   @AllowAuthenticated()
-  @ApiBearerAuth()
-  @ApiCreatedResponse({ type: UserEntity })
+  @ApiBearerAuth() // hien thi tren swagger ui
+  @ApiCreatedResponse({ type: UserEntity }) // 201 , post
   @Post()
   create(@Body() createUserDto: CreateUser, @GetUser() user: GetUserType) {
     checkRowLevelPermission(user, createUserDto.uid);
@@ -39,7 +39,7 @@ export class UsersController {
   }
 
   // +skip, +take: chuyển từ string sang number vì query params luôn là string
-  @ApiOkResponse({ type: [UserEntity] })
+  @ApiOkResponse({ type: [UserEntity] }) // 200 ,get,patch,delete
   @Get()
   findAll(
     @Query() { skip, take, order, sortBy, search, searchBy }: UserQueryDto,
