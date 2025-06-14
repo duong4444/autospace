@@ -7,8 +7,8 @@ import {
   Param,
   Delete,
   Query,
+  NotFoundException,
 } from '@nestjs/common';
-
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateUser } from './dtos/create.dto';
@@ -72,7 +72,10 @@ export class UsersController {
     @GetUser() user: GetUserType,
   ) {
     const userInfo = await this.prisma.user.findUnique({ where: { uid } });
-    checkRowLevelPermission(user, userInfo?.uid);
+    if (!userInfo) {
+      throw new NotFoundException(`User with id ${uid} not found`);
+    }
+    checkRowLevelPermission(user, userInfo.uid);
     return this.prisma.user.update({
       where: { uid },
       data: updateUserDto,
@@ -84,7 +87,10 @@ export class UsersController {
   @Delete(':uid')
   async remove(@Param('uid') uid: string, @GetUser() user: GetUserType) {
     const userInfo = await this.prisma.user.findUnique({ where: { uid } });
-    checkRowLevelPermission(user, userInfo?.uid);
+    if (!userInfo) {
+      throw new NotFoundException(`User with id ${uid} not found`);
+    }
+    checkRowLevelPermission(user, userInfo.uid);
     return this.prisma.user.delete({ where: { uid } });
   }
 }
