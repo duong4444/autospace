@@ -10,7 +10,7 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@autospace/sample-lib": "link:..\\..\\libs\\sample-lib",
+    "@autospace/sample-lib": "*",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

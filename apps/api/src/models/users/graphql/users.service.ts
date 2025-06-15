@@ -54,7 +54,7 @@ export class UsersService {
     }
 
     const salt = bcrypt.genSaltSync();
-    
+
     const passwordHash = bcrypt.hashSync(password, salt);
 
     const uid = uuid();
